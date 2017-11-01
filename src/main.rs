@@ -1,15 +1,22 @@
+mod structures;
+
 use std::io::prelude::*;
 use std::fs::File;
-use std::collections::HashMap;
+
+use structures::{Letter, Weight};
 
 pub const ALPHABETS: &str = "abcdefghijklmnopqrstuvwxyz";
 
 fn main() {
     let sample_data = &read_data_from_file("resources/sample_text.txt");
-    //let sample_data = &sample_data;
+
+    // Build next letter map before cleaning.
+    let next_letter_map = build_next_letter_map(sample_data);
+
     let sample_data = &clean_data(sample_data);
     let alphabet_frequency_map = build_frequency_map(sample_data);
 
+    println!("{:?}", next_letter_map);
     println!("The alphabets are {:?}", alphabet_frequency_map);
 }
 
@@ -23,6 +30,28 @@ fn read_data_from_file(file_path: &str) -> String {
 
     f.read_to_string(&mut file_content).unwrap();
     file_content
+}
+
+fn build_next_letter_map<'a>(sample_data: &'a str) -> Vec<Letter> {
+    let mut letters: Vec<Letter> = Vec::new();
+    let mut iter = sample_data.chars().peekable();
+
+    while let Some(alpha) = iter.next() {
+        let next_alpha = iter.peek().unwrap_or(&' ');
+        let next_alpha = next_alpha.clone();
+
+        if alpha == ' ' || next_alpha == ' ' || !alpha.is_alphabetic() || !next_alpha.is_alphabetic() {
+            continue;
+        }
+        
+        let weight = 1;
+        let weight = Weight { character: alpha, weight: weight };
+        let letter = Letter { character: next_alpha, next: vec![weight] };
+
+        letters.push(letter);
+    }
+
+    letters
 }
 
 fn clean_data<'a>(sample_data: &'a str) -> String {
