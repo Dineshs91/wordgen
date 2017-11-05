@@ -1,9 +1,13 @@
+extern crate rand;
+
 mod structures;
 
 use std::io::prelude::*;
 use std::fs::File;
 use std::collections::HashMap;
 use std::ascii::AsciiExt;
+
+use rand::{thread_rng, Rng};
 
 use structures::{Weight};
 
@@ -13,12 +17,47 @@ fn main() {
     let sample_data = &read_data_from_file("resources/sample_text.txt");
 
     // Build next letter map before cleaning.
-    let next_letter_map = build_next_letter_map(sample_data);
-
+    let next_letter_map: HashMap<char, Vec<Weight>> = build_next_letter_map(sample_data);
+    
     let sample_data = &clean_data(sample_data);
     let alphabet_frequency_map = build_frequency_map(sample_data);
-    println!("{:?}", next_letter_map);
-    println!("The alphabets are {:?}", alphabet_frequency_map);
+
+    let mut output_string: String = String::from("");
+    let mut starting_letter: char = 'a';
+    for _ in 0..5 {
+        let next_letter = pick_random_next_letter(starting_letter, &next_letter_map);
+        output_string.push(next_letter);
+        starting_letter = next_letter;
+    }
+
+    println!("The output string is {}", output_string);
+}
+
+fn pick_random_next_letter(letter: char, next_letter_map: &HashMap<char, Vec<Weight>>) -> char {
+    let mut total: i32 = 0;
+
+    let letter_a = next_letter_map.get(&letter).unwrap();
+    for next_letter in letter_a {
+        total += next_letter.weight;
+    }
+
+    let mut rng = thread_rng();
+    let mut n: i32 = rng.gen_range(0, total);
+
+    let mut chosen_letter: char = 'a';
+    let mut found = false;
+    while !found {
+        for next_letter in letter_a {
+            let next_letter_weight = next_letter.weight;
+            if next_letter_weight == n {
+                found = true;
+                chosen_letter = next_letter.character;
+            }
+        }
+        n = rng.gen_range(0, total);
+    }
+
+    chosen_letter
 }
 
 fn build_next_letter_map(sample_data: &str) -> HashMap<char, Vec<Weight>> {
