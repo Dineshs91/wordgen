@@ -9,7 +9,7 @@ use std::ascii::AsciiExt;
 
 use rand::{thread_rng, Rng};
 
-use structures::{Weight};
+use structures::{Weight, WeightedRandomLetter};
 
 pub const ALPHABETS: &str = "abcdefghijklmnopqrstuvwxyz";
 
@@ -36,25 +36,27 @@ fn main() {
 fn pick_random_next_letter(letter: char, next_letter_map: &HashMap<char, Vec<Weight>>) -> char {
     let mut total: i32 = 0;
 
-    let letter_a = next_letter_map.get(&letter).unwrap();
-    for next_letter in letter_a {
+    let next_letters = next_letter_map.get(&letter).unwrap();
+
+    // A random number will be chosen between 0 and the sum of weights of the next letters.
+    // Each letter is assigned a group of numbers based on their weight. This increases the
+    // probability of the letter being picked according to its weight.
+    let mut weighted_random_letters: Vec<WeightedRandomLetter> = vec![];
+    for next_letter in next_letters {
+        let weighted_random_letter = WeightedRandomLetter { character: next_letter.character, start: total, end: total + next_letter.weight };
+        weighted_random_letters.push(weighted_random_letter);
         total += next_letter.weight;
     }
 
     let mut rng = thread_rng();
-    let mut n: i32 = rng.gen_range(0, total);
+    let n: i32 = rng.gen_range(0, total);
 
     let mut chosen_letter: char = 'a';
-    let mut found = false;
-    while !found {
-        for next_letter in letter_a {
-            let next_letter_weight = next_letter.weight;
-            if next_letter_weight == n {
-                found = true;
-                chosen_letter = next_letter.character;
-            }
+    for weighted_random_letter in weighted_random_letters {
+        if n >= weighted_random_letter.start && n < weighted_random_letter.end {
+            chosen_letter = weighted_random_letter.character;
+            break;
         }
-        n = rng.gen_range(0, total);
     }
 
     chosen_letter
